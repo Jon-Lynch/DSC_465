@@ -1,0 +1,88 @@
+---
+title: "<span style='font-size: 15px'>Total Medals Won Over Time For Top Six Countries in Summer Olympic Games (1976-2008)</style>"
+output:
+  html_document: default
+  pdf_document: default
+
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE)
+knitr::opts_chunk$set(fig.width=6, fig.height=4)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+setwd("/Users/jonathanlynch/Desktop/DSC 465")
+olympics_V <- read.csv("olympics_V.csv", header = TRUE, sep = ",")
+library(ggplot2)
+library(gganimate)
+library(gifski)
+library(knitr)
+library(dplyr)
+library(magick)
+library(directlabels)
+
+u <- filter(olympics_V, Country_Code == "USA")
+u <- group_by(u, Year, Country_Code) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+u[, 3] <- cumsum(u[, 3])
+
+r <- filter(olympics_V, Country_Code == "RUS")
+r <- group_by(r, Year, Country_Code) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+r[, 3] <- cumsum(r[, 3])
+
+a <- filter(olympics_V, Country_Code == "AUS")
+a <- group_by(a, Year, Country_Code) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+a[, 3] <- cumsum(a[, 3])
+
+g <- filter(olympics_V, Country_Code == "GER")
+g <- group_by(g, Year, Country_Code) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+g[, 3] <- cumsum(g[, 3])
+
+c <- filter(olympics_V, Country_Code == "CHN")
+c <- group_by(c, Year, Country_Code) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+c[, 3] <- cumsum(c[, 3])
+
+i <- filter(olympics_V, Country_Code == "ITA") 
+i <- group_by(i, Year, Country_Code) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+i[, 3] <- cumsum(i[, 3])
+
+top_six <- rbind(u, r, a, g, c, i)
+
+ggplot(top_six, aes(x = reorder(Country_Code, -All_Medals), y = All_Medals, fill=Country_Code))+
+  geom_bar(stat="identity", colour="black", size= .3, show.legend= FALSE) + scale_fill_brewer(palette="Pastel1") +
+  coord_flip() + transition_time(Year) +
+  theme_dark()+
+  labs(title = "Year: {frame_time}", x="Country", y="Medals Won")
+
+anim_save("slap.gif")
+
+ggplot(top_six, aes(x=Year, y=All_Medals, colour=Country_Code))+
+  geom_point(size=.9)+
+  geom_line(size=.9)+
+  scale_color_brewer(palette = "Pastel1", guide = 'none') +
+  scale_x_discrete(limits=c(1976,1980,1984,1988,1992,1996,2000,2004,2008)) +
+  geom_dl(aes(label = Country_Code), method = list(dl.trans(x = x + 0.2), "last.points", cex = .8, fontface="bold")) +
+  theme_dark()+
+  transition_reveal(Year)+
+  labs(y="Medals Won", title="")
+
+anim_save("hit.gif")
+
+bar_gif <- image_read("slap.gif", strip = TRUE)
+line_gif <- image_read("hit.gif", strip = TRUE)
+
+new_gif <- image_append(c(bar_gif[1], line_gif[1]))
+for(i in 2:100){
+  combined <- image_append(c(bar_gif[i], line_gif[i]))
+  new_gif <- c(new_gif, combined)
+}
+
+new_gif
+
+```
+
+
+
+
+
+
+
