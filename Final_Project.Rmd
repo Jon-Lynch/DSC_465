@@ -1,17 +1,205 @@
 ---
-title: "<span style='font-size: 15px'>Total Medals Won Over Time For Top Six Countries in Summer Olympic Games (1976-2008)</style>"
+title: "<span style='font-size: 19px'>Summer Olympic Medals</style>"
 output:
   html_document: default
   pdf_document: default
-
+documentclass: extarticle
+fontsize: 17pt
 ---
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE)
-knitr::opts_chunk$set(fig.width=6, fig.height=4)
+#### by: Jonathan Lynch
+
+data: https://www.kaggle.com/divyansh22/summer-olympics-medals   
+\  
+
+<font size="3">The Summer Olympic Medals dataset evaluated within this report is a fairly large dataset consisting of over 15,300 observations, and 14 variables/features (most of which are categorical in nature).  Each observation represents a single medal won at the Summer Olympic Games from 1976 to 2008.  Some of the variables included are the year, sport, discipline, event, athlete name, gender, medal type (gold, silver, or bronze), and the country represented.  A variety of visualization techniques are explored within this report in order to appropriately display different aspects of the data.  Some of these techniques include a treemap, a stacked bar chart, a choropleth, a small multiples dodged bar graph, as well as an animated plot.  Each technique was chosen to help illustrate a specific aspect of the data, as well as convey a compelling story as a whole relating to this particular dataset.</font>   
+\  
+
+<font size="3">The story begins by analyzing the breakdown of sports by discipline and number of medalists through the use of a treemap.  This effectively illustrates which Summer Olympic sports were the most popular in terms of the overall number of Olympic medalists per sport.  Next, the number of individual medals won (gold, silver, and bronze) for each of the top ten athletes is evaluated through a stacked bar chart.  A choropleth displaying the total number of medals won for all countries is then interpreted to gain a solid understanding of which nations have historically been the most successful at the Summer Olympics.  Finally, the counts of each specific medal type (gold, silver, and bronze) are compared over time for the top two countries via a small multiples dodged bar graph.  Additionally, an animated plot illustrating the total number of medals won over time for the top six countries is included at the end in order to provide a high level comparison of a handful of the top performing nations.</font>   
+\  
+
+
+```{r, fig5, fig.width=10, fig.height=6, echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(treemapify)
+library(treemap)
+
+olympic_new <- read.csv("olympics_II.csv", header = TRUE, sep = ",")
+data <- group_by(olympic_new, Sport, Discipline) %>% summarize(Participants = sum(Bronze)+sum(Silver)+sum(Gold))
+
+ggplot(data, aes(area=Participants, fill= Participants, label=Sport, subgroup=Discipline))+
+  geom_treemap()+
+  geom_treemap_subgroup_text(place="centre", grow=T, alpha=.9, colour="White", fontface="italic", min.size=0)+
+  geom_treemap_text(colour="red", place="topleft", reflow=T)+
+  labs(fill="Number of Medalists")+
+  ggtitle("Largest Sports by Discipline in Summer Olympic Games 1976-2008")+
+  theme(plot.title = element_text(size = 16))+
+  theme(panel.border=element_rect(colour="black", fill=NA, size=1),
+        legend.background = element_rect(colour="black", size=0.5))+
+  scale_fill_continuous(trans = 'reverse', guide = guide_colourbar(reverse=T))
 ```
 
-```{r, echo=FALSE, warning=FALSE, message=FALSE}
-setwd("/Users/jonathanlynch/Desktop/DSC 465")
+<font size="3">The above treemap illustrates the breakdown of sports by discipline and number of medal winning athletes for all sports held at the Summer Olympic Games from 1976 to 2008.  The larger and darker each square/rectangle on this treemap, the greater the number of Summer Olympic medalists that participated in that particular sport/discipline.  This graph is informative because it gives a general idea about the popularity of each sport in terms of the total number of Olympic athletes that received medals in it over the course of nine Summer Olympics.  From this plot, it is apparent that the largest/most popular sports were Athletics, Aquatics -- swimming, and Rowing (approximately 1,500 medalists each).  Some of the less popular sports were Tennis, Badminton, and Modern Pentathlon (less than 500 medalists).</font>  
+\  
+
+<font size="3">In this visualization, both color and area were mapped to the number of medalists.  A continuous color scale from light blue to dark blue was utilized, and the text color of red was selected due to the fact that it is located on the opposite side of the color wheel as blue (and thus does not easily blend together).  The white text also stands out, but was made slightly transparent through the adjustment of its opacity level in R.  This visualization was refined through the drafting process by reversing the transition of the continuous color scale, which initially defaulted to scale from dark (low value) to light (high value), instead of light to dark.</font>  
+\  
+
+
+```{r, fig4, fig.width=10, fig.height=6, echo=FALSE, warning=FALSE, message=FALSE}
+setwd("/Users/jonathanlynch/Desktop/DSC_465")
+library(ggflags)
+library(dplyr)
+library(ggplot2)
+olympic_new <- read.csv("olympics_II.csv", header = TRUE, sep = ",")
+
+phelps <- filter(olympic_new, Athlete == "PHELPS, Michael")
+andrianov <- filter(olympic_new, Athlete == "ANDRIANOV, Nikolay")
+fischer <- filter(olympic_new, Athlete == "FISCHER, Birgit")
+nemov <- filter(olympic_new, Athlete == "NEMOV, Alexei")
+thompson <- filter(olympic_new, Athlete == "THOMPSON, Jenny")
+torres <- filter(olympic_new, Athlete == "TORRES, Dara")
+biondi <- filter(olympic_new, Athlete == "BIONDI, Matthew")
+coughlin <- filter(olympic_new, Athlete == "COUGHLIN, Natalie")
+dittyatin <- filter(olympic_new, Athlete == "DITYATIN, Aleksandr")
+hall <- filter(olympic_new, Athlete == "HALL, Gary Jr.")
+
+ten <- rbind(phelps, andrianov, fischer, nemov, thompson, torres, biondi, coughlin, dittyatin, hall)
+
+athlete <- group_by(ten, Athlete, Country_Code, Medal) %>% summarize(All_Medals = sum(Bronze)+
+                                                                 sum(Silver) + sum(Gold))
+
+athlete$Country_Code[which(athlete$Country_Code == "USA")] = "us"
+athlete$Country_Code[which(athlete$Country_Code == "RUS")] = "ru"
+athlete$Country_Code[which(athlete$Country_Code == "GER")] = "de"
+
+athlete$Medal <- factor(athlete$Medal, levels = c("Bronze", "Silver", "Gold"))
+
+athlete$test <- paste(athlete$Athlete, '     ')
+
+athletes_barplt <- ggplot(athlete, aes(x = reorder(test, All_Medals), y = All_Medals, fill=Medal)) +
+  geom_bar(stat="identity", colour= "black", size= .3, width= .4)+
+  geom_flag(y = -1.1, aes(country = Country_Code), size = 5) +
+  coord_flip() +
+  scale_fill_manual(values = c("#E69F00", "grey", "gold"), guide = guide_legend(reverse = T)) +
+  scale_y_continuous(breaks=c(0,2,4,6,8,10,12,14,16))+
+  labs(y="Number of Medals", x="Athlete")+
+  ggtitle("Top Ten Athletes with Most Summer Olympic Medals (1976-2008)")+
+  theme_bw()+
+  theme(plot.title = element_text(size = 16), panel.border=element_rect(colour="black", fill=NA, size=1),
+        legend.background = element_rect(colour="black", size=0.5),
+        axis.ticks.y=element_blank(),
+        panel.grid.minor = element_line(size = 0.25, linetype = 'dashed',
+                                        colour = "grey"),
+        panel.grid.major = element_line(size = 0.35, linetype = 'dashed',
+                                        colour = "grey"))
+
+
+athletes_barplt
+
+```
+
+<font size="3">The above stacked bar graph shows the number of medals won for the top ten athletes at the Summer Olympics from 1976 to 2008, broken down by specific medal type (gold, silver, and bronze).  One theme that begins to emerge with this visualization is that of the top ten athletes who competed in the Summer Olympics over approximately three decades, the majority were represented by just two countries, the United States and Russia.  From this graph, we can also see that Michael Phelps, the famous American swimmer, won the most Summer Olympic medals (14 gold, and 2 bronze) between 1976 and 2008.  The previous treemap illustrated that Aquatics -- swimming was one of the most popular Summer Olympic sports/disciplines.  Aquatics also happens to be the sport with the greatest number of events.  Thus, it intuitively makes a great deal of sense that the top medal winning athlete might be a swimmer.</font>  
+\  
+
+<font size="3">In this visualization, color was appropriately mapped to the specific type of medal won (gold, silver, or bronze).  The plot axes were flipped in order to allow for the names of the individual athletes to be more easily read, and through the drafting process the ggflags library in R was employed to create the round flag glyphs illustrating which country each athlete represents.</font>  
+\  
+
+
+```{r, fig3, fig.width=10, fig.height=6, echo=FALSE, warning=FALSE, message=FALSE}
+setwd("/Users/jonathanlynch/Desktop/DSC_465")
+library(dplyr)
+library(ggplot2)
+
+
+library(mapproj)
+
+world = map_data('world') 
+
+olympic_new <- read.csv("olympics_II.csv", header = TRUE, sep = ",")
+
+ol <- group_by(olympic_new,Country) %>% summarize(All_Medals = sum(Bronze)+sum(Silver) + sum(Gold))
+
+ol$Country[which(ol$Country == "United States")] = "USA" 
+ol$Country[which(ol$Country == "Czechoslovakia")] = "Czech Republic"
+ol$Country[which(ol$Country == "United Kingdom")] = "UK"
+ol$Country[which(ol$Country == "Korea, North")] = "North Korea"
+ol$Country[which(ol$Country == "Korea, South")] = "South Korea"
+
+
+olympic_map <- left_join(world, ol, by = c("region" = "Country"))
+
+ggplot(olympic_map,
+       aes(x=long, y=lat, group=group, fill= All_Medals))+
+  geom_polygon(colour="black")+
+  scale_fill_continuous(na.value="ivory",low = "ivory", high = "brown")+
+  labs(x="Longitude",
+       y="Latitude",
+       fill="Number of Medals") +
+  ggtitle("Total Number of Medals Won by Country in Summer Olympic Games 1976-2008")+
+  theme_dark()+
+  theme(plot.title = element_text(size = 16),
+        panel.border=element_rect(colour="black", fill=NA, size=1),
+        legend.background = element_rect(colour="black", size=0.5), 
+        legend.position= c(0.1, 0.27))
+
+```
+
+<font size="3">The above choropleth illustrates geographically the total number of medals won for each country in the Summer Olympics from 1976 to 2008.  From this visualization, it is overwhelmingly apparent that two of the most successful countries in the Summer Olympics over the course of this 32-year timespan were the United States and Russia (winning nearly 2,000 medals apiece).  Germany too, appears to have won a substantial number of medals.  Australia, China as well as many of the European nations also look to have done considerably well in terms of total medal counts.  Nonetheless, the emergent theme of this particular graph seems to be the dominant success of the United States and Russia (as well as Germany).</font>  
+\  
+
+<font size="3">This visualization was created by joining the world map data (with latitude and longitude coordinates) in R to the Summer Olympic Medals dataset by country.  A continuous color scale from ivory to brown was selected.  The color was mapped to the total number of medals won per country.  Initially, there were a few countries with missing data.  However, through the drafting process these were set to a default color of ivory, in order to preserve the overall effect of the visualization.  Finally, the legend was repositioned to the lower left corner of the graph.</font>  
+\  
+
+
+```{r, fig2, fig.width=10, fig.height=6, echo=FALSE, warning=FALSE, message=FALSE}
+
+
+setwd("/Users/jonathanlynch/Desktop/DSC_465")
+library(dplyr)
+library(ggplot2)
+olympics_II <- read.csv("olympics_II.csv", header = TRUE, sep = ",")
+olympic_new <- olympics_II
+
+USA <- filter(olympic_new, Country_Code == "USA")
+RUS <- filter(olympic_new, Country_Code == "RUS")
+
+USA <- group_by(USA, Year, Country_Code, Medal, All) %>% summarize(All_Medals = sum(Bronze)+
+                                                           sum(Silver) + sum(Gold))
+
+RUS <- group_by(RUS, Year, Country_Code, Medal, All) %>% summarize(All_Medals = sum(Bronze)+
+                                                                     sum(Silver) + sum(Gold))
+
+USA_RUS <- rbind(USA, RUS)
+
+USA_RUS$Medal <- factor(USA_RUS$Medal, levels = c("Bronze", "Silver", "Gold"))
+
+USA_RUSbar <- ggplot(USA_RUS, aes(x=Year, y=All_Medals, fill=Medal))+
+  geom_col(position = "dodge", colour = "black")
+  
+USA_RUSbar + facet_wrap(Country_Code ~ .) +
+  scale_x_continuous(breaks=USA_RUS$Year) +
+  labs(x="Year",
+       y="Number of Medals Won",
+       fill="Medals") +
+  scale_fill_manual(values = c("#E69F00", "grey", "gold")) +
+  ggtitle("Russia vs United States Summer Olympic Medals Won per Year (1976-2008)") +
+  theme_bw()+
+  theme(plot.title = element_text(size = 16),panel.border=element_rect(colour="black", fill=NA, size=1),
+        legend.background = element_rect(colour="black", size=0.5),
+        panel.grid.minor.x = element_blank())
+```
+
+<font size="3">The small multiples dodged bar chart shown above compares the individual number of bronze, silver, and gold medals won by Russia and the United States in each Summer Olympic Games from 1976 to 2008.  Since the United States and Russia were the two most successful nations in terms of overall medals won at the Summer Olympics during the timeframe under analysis, comparing the individual medal counts of these two countries over time was warranted.  From this visualization, it is apparent that the United States won more gold medals than any other medal type in every single Summer Olympic year, while Russia’s top winning medal types are a bit more mixed.  Additionally, it is evident that Russia’s best Summer Olympic year in terms of medals won was 1980.  Coincidentally, this also happens to be the year that the United States boycotted the Summer Olympic Games.  Likewise, Russia did not compete in the following Summer Olympics in 1984.</font>  
+\  
+
+<font size="3">This visualization was constructed in R markdown by using a facet wrap to display the two countries side-by-side for comparison purposes.  The individual medals were dodged to display the three different medal types (bronze, silver, and gold) alongside one another instead of being stacked.  Finally, color was again appropriately mapped to the specific medal type.  Through the drafting process, it was discovered that using a facet wrap was more effective than a facet grid for comparison purposes of the two countries in this particular small multiples graph.</font>  
+\  
+
+
+<font size="5">Total Medals Won Over Time For Top Six Countries in Summer Olympics</font>
+```{r, fig.width=6, fig.height=4, echo=FALSE, warning=FALSE, message=FALSE}
+setwd("/Users/jonathanlynch/Desktop/DSC_465")
 olympics_V <- read.csv("olympics_V.csv", header = TRUE, sep = ",")
 library(ggplot2)
 library(gganimate)
@@ -80,8 +268,13 @@ new_gif
 
 ```
 
+<font size="3">The above animated visualization shows the total medals won over time for the top six countries in the Summer Olympic Games from 1976 to 2008.  On the left is a bar chart which aggregates the number of medals won for each nation over time, and on the right is a line plot that shows the cumulative medals won over time for these same six countries.  From this visualization, it is evident that the United States, Russia, and Germany were very competitive with one another, outperforming all other nations by a considerable margin.  The three next best countries in terms of total medals won over time were Australia, China, and Italy.  This visualization also illustrates that China did not participate in either the 1976 or 1980 Summer Olympics.  Consequently, their medal tally begins later than the five other countries shown.</font>  
+\  
 
+<font size="3">This visualization was constructed in R markdown by first creating a rolling total of all medals won for each of the top six countries over the course of nine Summer Olympic Games.  Both the animated bar chart and animated line plot used a discrete pastel color palette from the color brewer library that was mapped to the individual countries, and a dark theme/background to tie the two graphs together visually.  The axes of the bar chart were flipped in order to allow for the country names to be more easily read along the y-axis, and the country names were added at the end of each line in the line graph via the direct labels library.  Finally, both animations were saved as separate gifs, and then iteratively stitched together, frame by frame, in order to create a new, combined gif displaying both animated plots side-by-side as a single visualization.</font>  
+\  
 
+<font size="3">Given more time, it would have been very insightful to evaluate the population of each country over time, and how this relates to the total number of medals won for each respective nation.  The dataset did not contain this information.  However, Germany for example has a current population of just about 84 million people, while the United States’ population is approximately 331 million.  Consequently, it is very impressive that Germany remained so competitive with the United States in terms of total medal counts given that their population is only a small fraction of ours.</font>  
 
 
 
